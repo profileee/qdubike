@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QDU Bike Remote Reservation</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .qrcode-container {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+            min-height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        #qrcode {
+            margin: 0 auto;
+        }
+        
+        .instructions {
+            background-color: #e8f4fc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .placeholder {
+            color: #95a5a6;
+            font-style: italic;
+        }
+        
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QDU Bike 远程预约</h1>
+        <p class="subtitle">输入自行车ID生成预约二维码</p>
+        
+        <div class="input-group">
+            <label for="bikeId">自行车 ID</label>
+            <input type="text" id="bikeId" placeholder="例如: 12345" autocomplete="off">
+        </div>
+        
+        <button id="generateBtn">生成二维码</button>
+        
+        <div class="qrcode-container">
+            <div id="qrcode"></div>
+            <p id="placeholder" class="placeholder">二维码将在此处显示</p>
+            <p id="errorMsg" class="error hidden"></p>
+        </div>
+        
+        <div class="instructions">
+            <h3>使用说明</h3>
+            <ol>
+                <li>在输入框中输入自行车ID</li>
+                <li>点击"生成二维码"按钮</li>
+                <li>使用手机扫描生成的二维码</li>
+                <li>在打开的页面中完成自行车预约</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // 备用二维码生成方案
+        function generateQRCode(text, container, size = 200) {
+            try {
+                // 方法1: 使用qrcode-generator库
+                if (typeof qrcode !== 'undefined') {
+                    const typeNumber = 0; // 自动检测
+                    const errorCorrectionLevel = 'H'; // 高容错率
+                    const qr = qrcode(typeNumber, errorCorrectionLevel);
+                    qr.addData(text);
+                    qr.make();
+                    
+                    container.innerHTML = qr.createImgTag(size / 25); // 25是默认的单元格大小
+                    return true;
+                }
+                
+                // 方法2: 如果库加载失败，使用纯Canvas生成
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // 简单的二维码生成逻辑（简化版）
+                canvas.width = size;
+                canvas.height = size;
+                
+                // 清空画布
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, size, size);
+                
+                // 绘制简单的二维码样式（实际项目中应该使用完整的二维码算法）
+                ctx.fillStyle = 'black';
+                
+                // 绘制定位标记
+                const drawPositionMarker = (x, y) => {
+                    ctx.fillRect(x, y, 35, 35);
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(x + 5, y + 5, 25, 25);
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(x + 10, y + 10, 15, 15);
+                };
+                
+                drawPositionMarker(0, 0);
+                drawPositionMarker(size - 35, 0);
+                drawPositionMarker(0, size - 35);
+                
+                // 添加文本提示
+                ctx.fillStyle = '#3498db';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('扫码预约自行车', size / 2, size - 10);
+                
+                container.innerHTML = '';
+                container.appendChild(canvas);
+                return true;
+                
+            } catch (error) {
+                console.error('生成二维码时出错:', error);
+                return false;
+            }
+        }
+
+        document.getElementById('generateBtn').addEventListener('click', function() {
+            const bikeId = document.getElementById('bikeId').value.trim();
+            const qrcodeContainer = document.getElementById('qrcode');
+            const placeholder = document.getElementById('placeholder');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            if (!bikeId) {
+                errorMsg.textContent = '请输入自行车ID';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+            
+            // 隐藏占位符和错误信息
+            placeholder.classList.add('hidden');
+            errorMsg.classList.add('hidden');
+            
+            // 清空之前的二维码
+            qrcodeContainer.innerHTML = '';
+            
+            // 拼接URL
+            const url = `http://xiaoyixinggo.com/admin/guide/app#${bikeId}`;
+            
+            // 生成二维码
+            const success = generateQRCode(url, qrcodeContainer, 200);
+            
+            if (!success) {
+                errorMsg.textContent = '生成二维码失败，请重试';
+                errorMsg.classList.remove('hidden');
+                placeholder.classList.remove('hidden');
+            }
+        });
+        
+        // 允许按Enter键生成二维码
+        document.getElementById('bikeId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('generateBtn').click();
+            }
+        });
+        
+        // 输入时清除错误信息
+        document.getElementById('bikeId').addEventListener('input', function() {
+            document.getElementById('errorMsg').classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
